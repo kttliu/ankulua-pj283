@@ -92,11 +92,11 @@ end
 
 function joinFromHome()
     toast("Select Normal Game")
-    if existsClick(Pattern("normal-game.png"):similar(0.90), 30) then
+    if existsClick(Pattern("normal-game.png"):similar(0.90), 50) then
         toast("Select Event Game")
-        if existsClick(Pattern("join-event.png"):similar(0.90), 30) then
+        if existsClick(Pattern("join-event.png"):similar(0.90), 50) then
             toast("Select 18 Summer Event")
-            if existsClick(Pattern("18summer-event.png"):similar(0.90), 30) then
+            if existsClick(Pattern("18summer-event.png"):similar(0.90), 50) then
                 toast("Loop game now")
 
                 recurringJoin();
@@ -128,46 +128,42 @@ end
 function recurringJoin()
     while(true) do
         toast("Select Stage: " .. stage)
-        if existsClick(Pattern(stage_pic):similar(0.95), 30) then
+        if existsClick(Pattern(stage_pic):similar(0.95), 50) then
             toast("Start Stage")
-            if existsClick(Pattern("ready-button.png"):similar(0.90), 30) then
+            if existsClick(Pattern("ready-button.png"):similar(0.90), 50) then
                 toast("Select Join Public Game")
-                if existsClick(Pattern("join-public.png"):similar(0.90), 30) then
+                if existsClick(Pattern("join-public.png"):similar(0.90), 50) then
                     wait(5)
                     toast("Select Team")
                     -- To-Do: Implement select team function
                     if existsClick(Pattern("confirm-join.png"):similar(0.90), 30) then
                         t = Timer()
-                        --wait for game eend
+                        --wait for game end
                         while(true) do
-                            toast("Wait completion - # of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
                             -- To-Do: Long waiting time to restart the game
-                            if existsClick(Pattern("complete-match-text.png"):similar(0.90), 30) then
-                                toast("Click through all screens")
-                                -- score page
-                                wait(3)
-                                click(getLastMatch())
-                                -- gift page 1
-                                wait(3)
-                                click(getLastMatch())
-                                -- gift page 2
-                                wait(3)
-                                click(getLastMatch())
-                                -- gift page 3
-                                -- wait(3)
-                                -- click(getLastMatch())
 
-                                wait(3)
-                                toast("Click Finish Match Button")
-                                existsClick(Pattern("finish-match.png"):similar(0.90), 30)
+                            toast("Wait completion - # of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
+                            -- Check for the complete match screen
+                            if exists(Pattern("complete-match-text.png"):similar(0.90), 30) then
+                                toast("Click through all screens")
+                                while(true) do
+                                    if(existsClick(Pattern("finish-match.png"):similar(0.90), 3)) then
+                                        noOfGamesFinished = noOfGamesFinished + 1
+                                        break;
+                                    else
+                                        toast("Click ...")
+                                        click(getLastMatch())
+                                    end
+                                end
+
                                 noOfGamesFinished = noOfGamesFinished + 1
 
                                -- wait long enough for the game menu
-                                wait(15)
+                                wait(20)
                                 break;
                             end
 
-                            -- check error
+                            -- check error and handle for next game
                             handleError()
                         end
                 end
