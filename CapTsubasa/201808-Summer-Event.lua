@@ -64,7 +64,7 @@ function createlogfile()
 
     local fileName = scriptPath() .. "log.txt"
     file = io.open(fileName, "w")
-    file:write("LOG Start: " .. now_str)
+    file:write("LOG Start: " .. now_str, "\n")
 end
 
 function log(msg)
@@ -72,7 +72,7 @@ function log(msg)
 
     local now = os.time()
     local now_str = os.date("%c", now)
-    file:write(now_str .. " : " .. msg)
+    file:write(now_str .. " : " .. msg, "\n")
 end
 
 --handle error
@@ -183,11 +183,11 @@ end
 function recurringJoin()
     while(true) do
         log("Select Stage: " .. stage)
-        if existsClick(Pattern(stage_pic):similar(0.95), 50) then
+        if existsClick(Pattern(stage_pic):similar(0.90), 30) then
             log("Start Stage")
-            if existsClick(Pattern("ready-button.png"):similar(0.90), 50) then
+            if existsClick(Pattern("ready-button.png"):similar(0.90), 40) then
                 log("Select Join Public Game")
-                if existsClick(Pattern("join-public.png"):similar(0.90), 50) then
+                if existsClick(Pattern("join-public.png"):similar(0.90), 40) then
                     wait(5)
                     log("Select Team")
                     -- To-Do: Implement select team function
@@ -197,7 +197,7 @@ function recurringJoin()
                         while(true) do
                             -- To-Do: Long waiting time to restart the game
 
-                            log("Wait completion - # of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
+                            log("# of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
                             -- Check game started
 
                            -- Shoot in the front
