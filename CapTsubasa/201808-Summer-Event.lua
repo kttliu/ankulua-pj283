@@ -53,14 +53,38 @@ elseif stage==160 then
     stage_pic =   "event-row1-text.png"
 end
 
+function convertDate(vardate)
+    local d,m,y,h,i,s = string.match(vardate, '(%d+)/(%d+)/(%d+) (%d+):(%d+):(%d+)')
+    return string.format('%s/%s/%s %s:%s:%s', y,m,d,h,i,s)
+end
+
+function createlogfile()
+    local now = os.time()
+    local now_str = os.date("%c", now)
+
+    local fileName = scriptPath() .. "log.txt"
+    file = io.open(fileName, "w")
+    file:write("LOG Start: " .. now_str)
+end
+
+function log(msg)
+    toast(msg)
+
+    local now = os.time()
+    local now_str = os.date("%c", now)
+    file:write(now_str .. " : " .. msg)
+end
+
 --handle error
 function handleError()
-    -- ToDo: handle comm error, dismiss
-    toast("Handle Error")
+    -- Prevent cap screen again for error checking
+    usePreviousSnap(true)
 
-    -- handle disconnected, retry it
+    -- ToDo: handle comm error, dismiss
     if existsClick(Pattern("reconnect.png"):similar(0.90), 1) then
-        toast ("Ooh, no connection")
+        usePreviousSnap(false)
+        -- handle disconnected, retry it
+        log ("Ooh, no connection")
         -- retry 3 times
         existsClick(Pattern("reconnect.png"):similar(0.90), 10)
         existsClick(Pattern("reconnect.png"):similar(0.90), 10)
@@ -69,28 +93,29 @@ function handleError()
         existsClick(Pattern("normal-game.png"):similar(0.90), 20)
         existsClick(Pattern("join-event.png"):similar(0.90), 20)
         existsClick(Pattern("18summer-event.png"):similar(0.90), 20)
-        return
-    end
 
-    -- handle dismiss
-    if exists(Pattern("dismissed-text.png"):similar(0.90), 1) then
-        toast ("Ooh, dismissed")
+    elseif exists(Pattern("dismissed-text.png"):similar(0.90), 1) then
+        usePreviousSnap(false)
+        -- handle dismiss
+        log ("Ooh, dismissed")
         existsClick(Pattern("ok-button.png"):similar(0.90), 20)
         existsClick(Pattern("confirm-join.png"):similar(0.90), 20)
-        return
-    end
 
+    end
     --public game comm error
+
+   -- Enable screen cap
+    usePreviousSnap(false)
 end
 
 function find_daily_event()
     -- Src: Right hand side point
-    p1 = Location(1120, 335)
+    local p1 = Location(1120, 335)
     -- Destination: Left hand side point
-    p2 = Location(p1:getX() - 300, p1:getY() - 300)
+    local p2 = Location(p1:getX() - 300, p1:getY() - 300)
 
     setManualTouchParameter(100, 1)
-    actionList = { {action = "touchDown", target = p1},
+    local actionList = { {action = "touchDown", target = p1},
         {action = "wait", target = strikeTiming},
         {action = "touchMove", target = p2},
         {action = "touchUp", target = p2} }
@@ -98,13 +123,13 @@ function find_daily_event()
 end
 
 function joinFromHome()
-    toast("Select Normal Game")
+    log("Select Normal Game")
     if existsClick(Pattern("normal-game.png"):similar(0.90), 50) then
-        toast("Select Event Game")
+        log("Select Event Game")
         if existsClick(Pattern("join-event.png"):similar(0.90), 50) then
-            toast("Select 18 Summer Event")
+            log("Select 18 Summer Event")
             if existsClick(Pattern("18summer-event.png"):similar(0.90), 50) then
-                toast("Loop game now")
+                log("Loop game now")
 
                 recurringJoin();
             end
@@ -119,11 +144,11 @@ end
 
 -- To-Do: To be implemeted
 function wait_joiner()
-    toast("waiting for joiner")
+    log("waiting for joiner")
     while true do
         -- To-Do: To implement menu selection later
         if exists(joiners_pic, 1) then
-            toast("Enough Joiner")
+            log("Enough Joiner")
             break
         end
         --avoid screen timeout
@@ -135,36 +160,36 @@ end
 function setAttackMode()
     if(attackMode==1) then
         if existsClick(Pattern("attack-mode-button.png"):similar(0.95), 1) then
-            toast("Change to Attack Mode")
+            log("Change to Attack Mode")
         end
     end
 end
 
 function shootIfGetBallInFrontArea()
-    imageToSearch_Ball = "in-game-ball.png"
-    imageToSearch_Shoot = "shoot-button.png"
+    local imageToSearch_Ball = "in-game-ball.png"
+    local imageToSearch_Shoot = "shoot-button.png"
 
-    front_field_area = Region(647,62,1272,708)
+    local front_field_area = Region(647,62,1272,708)
 
     if (front_field_area : exists(Pattern(imageToSearch_Ball):similar(0.85), 2)) then
         usePreviousSnap(true)
-        toast("Found ball in the front")
-        front_field_area : existsClick(Pattern(imageToSearch_Shoot):similar(0.95), 2)
-        toast("Shoot!!!")
+        log("Found ball in the front")
+        front_field_area : existsClick(Pattern(imageToSearch_Shoot):similar(0.95), 1)
+        log("Shoot!!!")
     end
     usePreviousSnap(false)
 end
 
 function recurringJoin()
     while(true) do
-        toast("Select Stage: " .. stage)
+        log("Select Stage: " .. stage)
         if existsClick(Pattern(stage_pic):similar(0.95), 50) then
-            toast("Start Stage")
+            log("Start Stage")
             if existsClick(Pattern("ready-button.png"):similar(0.90), 50) then
-                toast("Select Join Public Game")
+                log("Select Join Public Game")
                 if existsClick(Pattern("join-public.png"):similar(0.90), 50) then
                     wait(5)
-                    toast("Select Team")
+                    log("Select Team")
                     -- To-Do: Implement select team function
                     if existsClick(Pattern("confirm-join.png"):similar(0.90), 30) then
                         t = Timer()
@@ -172,7 +197,7 @@ function recurringJoin()
                         while(true) do
                             -- To-Do: Long waiting time to restart the game
 
-                            toast("Wait completion - # of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
+                            log("Wait completion - # of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
                             -- Check game started
 
                            -- Shoot in the front
@@ -183,13 +208,13 @@ function recurringJoin()
 
                             -- Check for the complete match screen
                             if exists(Pattern("complete-match-text.png"):similar(0.90), 1) then
-                                toast("Click through all screens")
+                                log("Click through all screens")
                                 while(true) do
                                     if(existsClick(Pattern("finish-match.png"):similar(0.90), 1)) then
                                         noOfGamesFinished = noOfGamesFinished + 1
                                         break;
                                     else
-                                        toast("Click ...")
+                                        log("Click ...")
                                         click(getLastMatch())
                                     end
                                 end
@@ -197,6 +222,7 @@ function recurringJoin()
                                 noOfGamesFinished = noOfGamesFinished + 1
 
                                -- wait long enough for the game menu
+                               log("Completing game and wait for stage menu")
                                 wait(20)
                                 break;
                             end
@@ -212,5 +238,6 @@ function recurringJoin()
 end
 
 -- main
+createlogfile()
 joinFromHome()
 scriptExit("End: " + noOfGamesFinished)
