@@ -15,13 +15,20 @@ noOfGamesFinished = 0
 
 stage =  230
 gameMode = 30
+attackMode = 0
 
 dialogInit()
 -- Dialog for select Stage
-addRadioGroup("stage", 1)
+addRadioGroup("stage", 230)
 addRadioButton("Stage 2 - 30 stma", 230)
 addRadioButton("Stage 2 - 45 stma", 245)
 addRadioButton("Stage 1 - 60 stma", 160)
+
+-- Set Attack Mode or Not
+addSeparator()
+addRadioGroup("attackMode", 1)
+addRadioButton("No Change", 0)
+addRadioButton("Attack", 1)
 
 --[[
 -- Dialog for select Game Mode
@@ -52,7 +59,7 @@ function handleError()
     toast("Handle Error")
 
     -- handle disconnected, retry it
-    if existsClick(Pattern("reconnect.png"):similar(0.90), 5) then
+    if existsClick(Pattern("reconnect.png"):similar(0.90), 1) then
         toast ("Ooh, no connection")
         -- retry 3 times
         existsClick(Pattern("reconnect.png"):similar(0.90), 10)
@@ -66,7 +73,7 @@ function handleError()
     end
 
     -- handle dismiss
-    if exists(Pattern("dismissed-text.png"):similar(0.90), 5) then
+    if exists(Pattern("dismissed-text.png"):similar(0.90), 1) then
         toast ("Ooh, dismissed")
         existsClick(Pattern("ok-button.png"):similar(0.90), 20)
         existsClick(Pattern("confirm-join.png"):similar(0.90), 20)
@@ -125,6 +132,29 @@ function wait_joiner()
     end
 end
 
+function setAttackMode()
+    if(attackMode==1) then
+        if existsClick(Pattern("attack-mode-button.png"):similar(0.95), 1) then
+            toast("Change to Attack Mode")
+        end
+    end
+end
+
+function shootIfGetBallInFrontArea()
+    imageToSearch_Ball = "in-game-ball.png"
+    imageToSearch_Shoot = "shoot-button.png"
+
+    front_field_area = Region(647,62,1272,708)
+
+    if (front_field_area : exists(Pattern(imageToSearch_Ball):similar(0.85), 2)) then
+        usePreviousSnap(true)
+        toast("Found ball in the front")
+        front_field_area : existsClick(Pattern(imageToSearch_Shoot):similar(0.95), 2)
+        toast("Shoot!!!")
+    end
+    usePreviousSnap(false)
+end
+
 function recurringJoin()
     while(true) do
         toast("Select Stage: " .. stage)
@@ -143,11 +173,19 @@ function recurringJoin()
                             -- To-Do: Long waiting time to restart the game
 
                             toast("Wait completion - # of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
+                            -- Check game started
+
+                           -- Shoot in the front
+                           -- shootIfGetBallInFrontArea()
+
+                           -- Set Attack Mode
+                           setAttackMode()
+
                             -- Check for the complete match screen
-                            if exists(Pattern("complete-match-text.png"):similar(0.90), 30) then
+                            if exists(Pattern("complete-match-text.png"):similar(0.90), 1) then
                                 toast("Click through all screens")
                                 while(true) do
-                                    if(existsClick(Pattern("finish-match.png"):similar(0.90), 3)) then
+                                    if(existsClick(Pattern("finish-match.png"):similar(0.90), 1)) then
                                         noOfGamesFinished = noOfGamesFinished + 1
                                         break;
                                     else
@@ -163,7 +201,7 @@ function recurringJoin()
                                 break;
                             end
 
-                            -- check error and handle for next game
+                            -- check error, handle for next game, if any
                             handleError()
                         end
                 end
