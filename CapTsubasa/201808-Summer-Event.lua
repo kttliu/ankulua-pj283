@@ -333,6 +333,8 @@ function recurringJoinGuild()
                     -- Disable capture cache
                     usePreviousSnap(false)
                 elseif existsClick(Pattern(guild_event_to_join()):similar(0.90)) then -- Join selected event(s)
+                elseif existsClick(Pattern("finish-match.png"):similar(0.90), 1) then
+                    noOfGamesFinished = noOfGamesFinished + 1
                 end
                 handleError()
 
