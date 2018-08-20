@@ -17,6 +17,8 @@ stage =  230
 gameMode = 30
 attackMode = 0
 gameMode = 21
+selected_guild_event = ""
+debugMode=false
 
 dialogInit()
 -- Dialog for select Stage
@@ -24,11 +26,6 @@ addRadioGroup("stage", 230)
 addRadioButton("Stage 2 - 30 stma", 230)
 addRadioButton("Stage 2 - 45 stma", 245)
 addRadioButton("Stage 1 - 60 stma", 160)
-newRow()
---
-spinnerItems = {"0000 - Any", "0001 - 2018 Summer Event"}
-addTextView("Guild Event To Join:  ")
-addSpinner("selected_guild_event", spinnerItems, "0000 - Any")
 newRow()
 
 -- Dialog for select Game Mode
@@ -39,15 +36,24 @@ addRadioButton("Join Guild", 21)
 --addRadioButton("Create Guild", 20)
 --addRadioButton("Create Public", 30)
 addRadioButton("Join Public", 31)
+newRow()
+
+-- Guild Game - Event to join
+spinnerItems = {"0000 - Any", "0001 - 2018 Summer Event"}
+addTextView("Guild Event To Join:  ")
+addSpinner("selected_guild_event", spinnerItems, "0000 - Any")
+newRow()
+
 -- Set Attack Mode or Not
 addSeparator()
-addRadioGroup("attackMode", 1)
+addRadioGroup("attackMode", 0)
 addRadioButton("No Change", 0)
 addRadioButton("Attack", 1)
+
+addSeparator()
+addCheckBox("debugMode", "Debug Model", false)
+
 dialogShow("Menu")
-
-
-
 
 -- Set Stage picture
 stage_pic = "event-row2-text.png"
@@ -71,9 +77,11 @@ end
 function log(msg)
     toast(msg)
 
-    local now = os.time()
-    local now_str = os.date("%c", now)
-    file:write(now_str .. " : " .. msg, "\n")
+    if(debugMode) then
+        local now = os.time()
+        local now_str = os.date("%c", now)
+        file:write(now_str .. " : " .. msg, "\n")
+    end
 end
 
 --handle error
@@ -254,6 +262,7 @@ function recurringJoin()
     end
 end
 
+-- Return the picture of selected game
 function guild_event_to_join()
     local event_code = string.sub(selected_guild_event,1,4)
     if event_code=="0000" then
@@ -265,17 +274,15 @@ end
 
 function recurringJoinGuild()
         while(true) do
-                -- Capture pic
-                exists(Pattern("dummy.png"):similar(0.90))
-               -- Use last capture image for checking
+               -- Go to the Waiting Room if exists
+               existsClick(Pattern("join-guild-game.png"):similar(0.90))
+
+                -- Use last capture image for checking
                 usePreviousSnap(true)
 
                 log("# of games finished:" .. noOfGamesFinished)
 
-                -- Go to the Waiting Room
-
-                if existsClick(Pattern("join-guild-game.png"):similar(0.90)) then
-                elseif existsClick(Pattern("confirm-join.png"):similar(0.90)) then
+                if existsClick(Pattern("confirm-join.png"):similar(0.90)) then
                     -- Disable capture cache
                     usePreviousSnap(false)
 
@@ -284,9 +291,9 @@ function recurringJoinGuild()
                         local isAttacking=false
 
                         -- Capture pic
-                        exists(Pattern("dummy.png"):similar(0.90))
+                        -- exists(Pattern("dummy.png"):similar(0.90))
                         -- Use last capture image for checking
-                        usePreviousSnap(true)
+                        --usePreviousSnap(true)
 
                         -- To-Do: Long waiting time to restart the game
 
@@ -295,17 +302,18 @@ function recurringJoinGuild()
                             log("Click through all screens")
                             -- Disable capture cache
                             usePreviousSnap(false)
+
                             while(true) do
-                                if(existsClick(Pattern("finish-match.png"):similar(0.90), 0.3)) then
+                                if(existsClick(Pattern("finish-match.png"):similar(0.90), 1)) then
                                     noOfGamesFinished = noOfGamesFinished + 1
                                     break;
                                 else
-                                    click( Location(300, 300))
+                                    click( Location(500, 300))
                                 end
                             end
                             -- wait long enough for the game menu
                             log("Completing game and wait for stage menu")
-                            wait(2)
+                            wait(5)
                             break;
 
                         else
