@@ -77,7 +77,7 @@ function handleError()
     usePreviousSnap(true)
 
     -- ToDo: handle comm error, dismiss
-    if existsClick(Pattern("reconnect.png"):similar(0.90), 1) then
+    if existsClick(Pattern("reconnect.png"):similar(0.90)) then
         usePreviousSnap(false)
         -- handle disconnected, retry it
         log ("Ooh, no connection")
@@ -91,7 +91,7 @@ function handleError()
         elseif gameMode==31 then
             joinFromHome()
         end
-    elseif exists(Pattern("dismissed-text.png"):similar(0.90), 1) then
+    elseif exists(Pattern("dismissed-text.png"):similar(0.90)) then
         usePreviousSnap(false)
         -- handle dismiss
         log ("Ooh, dismissed")
@@ -141,7 +141,7 @@ end
 
 function setAttackMode()
     if(attackMode==1) then
-        if existsClick(Pattern("attack-mode-button.png"):similar(0.95), 1) then
+        if existsClick(Pattern("attack-mode-button.png"):similar(0.95)) then
             log("Change to Attack Mode")
         end
     end
@@ -243,17 +243,17 @@ end
 
 function recurringJoinGuild()
         while(true) do
-                existsClick(Pattern("join-guild-game.png"):similar(0.90), 1)
+                existsClick(Pattern("join-guild-game.png"):similar(0.90))
 
                 log("Waiting Guild Game")
-                if existsClick(Pattern("game-join-event-text.png"):similar(0.90), 1) then
+                if existsClick(Pattern("game-join-event-text.png"):similar(0.90)) then
                     if existsClick(Pattern("confirm-join.png"):similar(0.90), 30) then
-                        t = Timer()
+
                         --wait for game end
                         while(true) do
                             -- To-Do: Long waiting time to restart the game
 
-                            log("# of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
+                            log("# of games finished:" .. noOfGamesFinished)
                             -- Check game started
 
                             -- Shoot in the front
@@ -263,23 +263,21 @@ function recurringJoinGuild()
                             setAttackMode()
 
                             -- Check for the complete match screen
-                            if exists(Pattern("complete-match-text.png"):similar(0.90), 1) then
+                            if exists(Pattern("complete-match-text.png"):similar(0.90), 0.5) then
                                 log("Click through all screens")
                                 while(true) do
-                                    if(existsClick(Pattern("finish-match.png"):similar(0.90), 1)) then
+                                    if(existsClick(Pattern("finish-match.png"):similar(0.90), 0.8)) then
                                         noOfGamesFinished = noOfGamesFinished + 1
                                         break;
                                     else
-                                        log("Click ...")
+                                        --log("Click ...")
                                         click(getLastMatch())
                                     end
                                 end
 
-                                noOfGamesFinished = noOfGamesFinished + 1
-
                                 -- wait long enough for the game menu
                                 log("Completing game and wait for stage menu")
-                                wait(10)
+                                wait(5)
                                 break;
                             end
 
