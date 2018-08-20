@@ -16,6 +16,7 @@ noOfGamesFinished = 0
 stage =  230
 gameMode = 30
 attackMode = 0
+gameMode = 21
 
 dialogInit()
 -- Dialog for select Stage
@@ -24,22 +25,22 @@ addRadioButton("Stage 2 - 30 stma", 230)
 addRadioButton("Stage 2 - 45 stma", 245)
 addRadioButton("Stage 1 - 60 stma", 160)
 
+-- Dialog for select Game Mode
+addSeparator()
+addRadioGroup("gameMode", 21)
+addRadioButton("Join Guild", 21)
+--addRadioButton("Create Myself", 10)
+--addRadioButton("Create Guild", 20)
+--addRadioButton("Create Public", 30)
+addRadioButton("Join Public", 31)
+
 -- Set Attack Mode or Not
 addSeparator()
 addRadioGroup("attackMode", 1)
 addRadioButton("No Change", 0)
 addRadioButton("Attack", 1)
 
---[[
--- Dialog for select Game Mode
-addSeparator()
-addRadioGroup("gameMode", 1)
-addRadioButton("Create Myself", 10)
-addRadioButton("Create Guild", 20)
-addRadioButton("Join Guild", 21)
-addRadioButton("Create Public", 30)
-addRadioButton("Join Public", 31)
---]]
+
 
 dialogShow("Menu")
 
@@ -51,11 +52,6 @@ elseif stage==245 then
   stage_pic =   "event-row2-text.png"
 elseif stage==160 then
     stage_pic =   "event-row1-text.png"
-end
-
-function convertDate(vardate)
-    local d,m,y,h,i,s = string.match(vardate, '(%d+)/(%d+)/(%d+) (%d+):(%d+):(%d+)')
-    return string.format('%s/%s/%s %s:%s:%s', y,m,d,h,i,s)
 end
 
 function createlogfile()
@@ -90,18 +86,21 @@ function handleError()
         existsClick(Pattern("reconnect.png"):similar(0.90), 10)
 
         -- start from home
-        existsClick(Pattern("normal-game.png"):similar(0.90), 20)
-        existsClick(Pattern("join-event.png"):similar(0.90), 20)
-        existsClick(Pattern("18summer-event.png"):similar(0.90), 20)
-
+        if gameMode==21 then
+            joinFromHome_JoinGuild()
+        elseif gameMode==31 then
+            joinFromHome()
+        end
     elseif exists(Pattern("dismissed-text.png"):similar(0.90), 1) then
         usePreviousSnap(false)
         -- handle dismiss
         log ("Ooh, dismissed")
         existsClick(Pattern("ok-button.png"):similar(0.90), 20)
         existsClick(Pattern("confirm-join.png"):similar(0.90), 20)
-
-    end
+     elseif  exists(Pattern("too-many-joiner.png"):similar(0.90), 1) then
+        log ("Ooh, too many joiners")
+        existsClick(Pattern("ok-button.png"):similar(0.90), 20)
+     end
     --public game comm error
 
    -- Enable screen cap
@@ -130,13 +129,25 @@ function joinFromHome()
             log("Select 18 Summer Event")
             if existsClick(Pattern("18summer-event.png"):similar(0.90), 50) then
                 log("Loop game now")
-
-                recurringJoin();
             end
         end
     end
 end
 
+function joinFromHome_JoinGuild()
+    log("Select Normal Game")
+    existsClick(Pattern("normal-game.png"):similar(0.90), 50)
+end
+
+function setAttackMode()
+    if(attackMode==1) then
+        if existsClick(Pattern("attack-mode-button.png"):similar(0.95), 1) then
+            log("Change to Attack Mode")
+        end
+    end
+end
+
+--[[
 -- To-Do: To be implemeted
 function start_game_with_joiner()
     -- To-Do: To implement
@@ -157,14 +168,6 @@ function wait_joiner()
     end
 end
 
-function setAttackMode()
-    if(attackMode==1) then
-        if existsClick(Pattern("attack-mode-button.png"):similar(0.95), 1) then
-            log("Change to Attack Mode")
-        end
-    end
-end
-
 function shootIfGetBallInFrontArea()
     local imageToSearch_Ball = "in-game-ball.png"
     local imageToSearch_Shoot = "shoot-button.png"
@@ -179,6 +182,7 @@ function shootIfGetBallInFrontArea()
     end
     usePreviousSnap(false)
 end
+--]]
 
 function recurringJoin()
     while(true) do
@@ -237,7 +241,65 @@ function recurringJoin()
     end
 end
 
+function recurringJoinGuild()
+        while(true) do
+                existsClick(Pattern("join-guild-game.png"):similar(0.90), 1)
+
+                log("Waiting Guild Game")
+                if existsClick(Pattern("game-join-event-text.png"):similar(0.90), 1) then
+                    if existsClick(Pattern("confirm-join.png"):similar(0.90), 30) then
+                        t = Timer()
+                        --wait for game end
+                        while(true) do
+                            -- To-Do: Long waiting time to restart the game
+
+                            log("# of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
+                            -- Check game started
+
+                            -- Shoot in the front
+                            -- shootIfGetBallInFrontArea()
+
+                            -- Set Attack Mode
+                            setAttackMode()
+
+                            -- Check for the complete match screen
+                            if exists(Pattern("complete-match-text.png"):similar(0.90), 1) then
+                                log("Click through all screens")
+                                while(true) do
+                                    if(existsClick(Pattern("finish-match.png"):similar(0.90), 1)) then
+                                        noOfGamesFinished = noOfGamesFinished + 1
+                                        break;
+                                    else
+                                        log("Click ...")
+                                        click(getLastMatch())
+                                    end
+                                end
+
+                                noOfGamesFinished = noOfGamesFinished + 1
+
+                                -- wait long enough for the game menu
+                                log("Completing game and wait for stage menu")
+                                wait(10)
+                                break;
+                            end
+
+                            -- check error, handle for next game, if any
+                            handleError()
+                        end
+                    end
+                end
+                handleError()
+        end
+end
+
 -- main
 createlogfile()
-joinFromHome()
+if gameMode==21 then
+    joinFromHome_JoinGuild()
+    wait(5)
+    recurringJoinGuild()
+elseif gameMode==31 then
+    joinFromHome()
+    recurringJoin();
+end
 scriptExit("End: " + noOfGamesFinished)
