@@ -24,6 +24,12 @@ addRadioGroup("stage", 230)
 addRadioButton("Stage 2 - 30 stma", 230)
 addRadioButton("Stage 2 - 45 stma", 245)
 addRadioButton("Stage 1 - 60 stma", 160)
+newRow()
+--
+spinnerItems = {"0000 - Any", "0001 - 2018 Summer Event"}
+addTextView("Guild Event To Join:  ")
+addSpinner("selected_guild_event", spinnerItems, "0000 - Any")
+newRow()
 
 -- Dialog for select Game Mode
 addSeparator()
@@ -33,16 +39,15 @@ addRadioButton("Join Guild", 21)
 --addRadioButton("Create Guild", 20)
 --addRadioButton("Create Public", 30)
 addRadioButton("Join Public", 31)
-
 -- Set Attack Mode or Not
 addSeparator()
 addRadioGroup("attackMode", 1)
 addRadioButton("No Change", 0)
 addRadioButton("Attack", 1)
-
-
-
 dialogShow("Menu")
+
+
+
 
 -- Set Stage picture
 stage_pic = "event-row2-text.png"
@@ -74,6 +79,7 @@ end
 --handle error
 function handleError()
     -- Prevent cap screen again for error checking
+    exists(Pattern("dummy.png"):similar(0.90))
     usePreviousSnap(true)
 
     -- ToDo: handle comm error, dismiss
@@ -99,6 +105,9 @@ function handleError()
         existsClick(Pattern("confirm-join.png"):similar(0.90), 20)
      elseif  exists(Pattern("too-many-joiner.png"):similar(0.90), 1) then
         log ("Ooh, too many joiners")
+        existsClick(Pattern("ok-button.png"):similar(0.90), 20)
+    elseif  exists(Pattern("room-disappear-text.png"):similar(0.90), 1) then
+        log ("Ooh, room disappeared")
         existsClick(Pattern("ok-button.png"):similar(0.90), 20)
      end
     --public game comm error
@@ -139,10 +148,13 @@ function joinFromHome_JoinGuild()
     existsClick(Pattern("normal-game.png"):similar(0.90), 50)
 end
 
-function setAttackMode()
-    if(attackMode==1) then
+function setAttackMode(isAttacking)
+    if(attackMode==1 and isAttacking==false) then
         if existsClick(Pattern("attack-mode-button.png"):similar(0.95)) then
             log("Change to Attack Mode")
+            return false
+        else
+            return true
         end
     end
 end
@@ -198,6 +210,7 @@ function recurringJoin()
                     if existsClick(Pattern("confirm-join.png"):similar(0.90), 30) then
                         t = Timer()
                         --wait for game end
+                        local isAttacking=false
                         while(true) do
                             -- To-Do: Long waiting time to restart the game
 
@@ -208,7 +221,7 @@ function recurringJoin()
                            -- shootIfGetBallInFrontArea()
 
                            -- Set Attack Mode
-                           setAttackMode()
+                            isAttacking = setAttackMode(isAttacking)
 
                             -- Check for the complete match screen
                             if exists(Pattern("complete-match-text.png"):similar(0.90), 1) then
@@ -241,52 +254,82 @@ function recurringJoin()
     end
 end
 
+function guild_event_to_join()
+    local event_code = string.sub(selected_guild_event,1,4)
+    if event_code=="0000" then
+        return "game-join-event-text-any.png"
+    else
+        return "game-join-event-text-" .. event_code .. ".png"
+    end
+end
+
 function recurringJoinGuild()
         while(true) do
-                existsClick(Pattern("join-guild-game.png"):similar(0.90))
+                -- Capture pic
+                exists(Pattern("dummy.png"):similar(0.90))
+               -- Use last capture image for checking
+                usePreviousSnap(true)
 
-                log("Waiting Guild Game")
-                if existsClick(Pattern("game-join-event-text.png"):similar(0.90)) then
-                    if existsClick(Pattern("confirm-join.png"):similar(0.90), 30) then
+                log("# of games finished:" .. noOfGamesFinished)
 
-                        --wait for game end
-                        while(true) do
-                            -- To-Do: Long waiting time to restart the game
+                -- Go to the Waiting Room
 
-                            log("# of games finished:" .. noOfGamesFinished)
-                            -- Check game started
+                if existsClick(Pattern("join-guild-game.png"):similar(0.90)) then
+                elseif existsClick(Pattern("confirm-join.png"):similar(0.90)) then
+                    -- Disable capture cache
+                    usePreviousSnap(false)
 
-                            -- Shoot in the front
-                            -- shootIfGetBallInFrontArea()
+                   -- Joined a game, do in game handling
+                    while(true) do
+                        local isAttacking=false
 
-                            -- Set Attack Mode
-                            setAttackMode()
+                        -- Capture pic
+                        exists(Pattern("dummy.png"):similar(0.90))
+                        -- Use last capture image for checking
+                        usePreviousSnap(true)
 
-                            -- Check for the complete match screen
-                            if exists(Pattern("complete-match-text.png"):similar(0.90), 0.5) then
-                                log("Click through all screens")
-                                while(true) do
-                                    if(existsClick(Pattern("finish-match.png"):similar(0.90), 0.8)) then
-                                        noOfGamesFinished = noOfGamesFinished + 1
-                                        break;
-                                    else
-                                        --log("Click ...")
-                                        click(getLastMatch())
-                                    end
+                        -- To-Do: Long waiting time to restart the game
+
+                        -- Check for the complete match screen
+                        if exists(Pattern("complete-match-text.png"):similar(0.90)) then
+                            log("Click through all screens")
+                            -- Disable capture cache
+                            usePreviousSnap(false)
+                            while(true) do
+                                if(existsClick(Pattern("finish-match.png"):similar(0.90), 0.3)) then
+                                    noOfGamesFinished = noOfGamesFinished + 1
+                                    break;
+                                else
+                                    click( Location(300, 300))
                                 end
-
-                                -- wait long enough for the game menu
-                                log("Completing game and wait for stage menu")
-                                wait(5)
-                                break;
                             end
+                            -- wait long enough for the game menu
+                            log("Completing game and wait for stage menu")
+                            wait(2)
+                            break;
+
+                        else
+                            -- Set Attack Mode
+                            isAttacking = setAttackMode(isAttacking)
+
+                            -- Shoot in the front field
+                            -- shootIfGetBallInFrontArea()
 
                             -- check error, handle for next game, if any
                             handleError()
                         end
+
+                        -- Disable capture cache
+                        usePreviousSnap(false)
                     end
+                    -- Disable capture cache
+                    usePreviousSnap(false)
+                elseif existsClick(Pattern(guild_event_to_join()):similar(0.90)) then -- Join selected event(s)
                 end
                 handleError()
+
+                -- Disable capture cache
+                usePreviousSnap(false)
         end
 end
 
