@@ -7,8 +7,18 @@
 --
 setImmersiveMode(true)
 scriptDimension = 1280
-Settings:setScriptDimension(true, scriptDimension)
 Settings:setCompareDimension(true, scriptDimension)
+Settings:setScriptDimension(true, scriptDimension)
+
+screenSize = getRealScreenSize()
+screenSizeWidth = screenSize:getX() -- the width of device real screen
+screenSizeHeight = screenSize:getY() -- the height of device real screen
+
+regionUpperHalf = Region(0, 0, screenSizeWidth,screenSizeHeight/2)
+regionLowerHalf=Region(0, screenSizeHeight/2, screenSizeWidth,screenSizeHeight/2)
+regionLeftHalf=Region(0, 0, screenSizeWidth/2,screenSizeHeight)
+regionRightHalf=Region(screenSizeWidth/2, 0, screenSizeWidth/2,screenSizeHeight)
+regionInGameAttackModeButtons = Region(0,screenSizeHeight*7/8,screenSizeWidth/2,screenSizeHeight/8)
 
 scriptTime = Timer()
 noOfGamesFinished = 0
@@ -156,14 +166,16 @@ function joinFromHome_JoinGuild()
     existsClick(Pattern("normal-game.png"):similar(0.90), 50)
 end
 
+-- Set to attack mode
+-- param: flag  to indicate if last attemp is sucessful
+-- return true if cannot deteled that Attack button is ON; otherwise false
 function setAttackMode(isAttacking)
     if(attackMode==1 and isAttacking==false) then
-        if existsClick(Pattern("attack-mode-button.png"):similar(0.95)) then
+        if regionInGameAttackModeButtons:existsClick(Pattern("attack-mode-button.png"):similar(0.95)) then
             log("Change to Attack Mode")
             return false
-        else
-            return true
         end
+        return true
     end
 end
 
@@ -299,21 +311,21 @@ function recurringJoinGuild()
 
                         -- Check for the complete match screen
                         if exists(Pattern("complete-match-text.png"):similar(0.90)) then
+                            noOfGamesFinished = noOfGamesFinished + 1
                             log("Click through all screens")
                             -- Disable capture cache
                             usePreviousSnap(false)
 
                             while(true) do
-                                if(existsClick(Pattern("finish-match.png"):similar(0.90), 1)) then
-                                    noOfGamesFinished = noOfGamesFinished + 1
+                                if(existsClick(Pattern("finish-match.png"):similar(0.90), 2)) then
                                     break;
                                 else
-                                    click( Location(500, 300))
+                                    click( Location(300, 300))
                                 end
                             end
                             -- wait long enough for the game menu
                             log("Completing game and wait for stage menu")
-                            wait(5)
+                            wait(2)
                             break;
 
                         else
@@ -333,8 +345,7 @@ function recurringJoinGuild()
                     -- Disable capture cache
                     usePreviousSnap(false)
                 elseif existsClick(Pattern(guild_event_to_join()):similar(0.90)) then -- Join selected event(s)
-                elseif existsClick(Pattern("finish-match.png"):similar(0.90), 1) then
-                    noOfGamesFinished = noOfGamesFinished + 1
+                elseif existsClick(Pattern("finish-match.png"):similar(0.90)) then
                 end
                 handleError()
 
