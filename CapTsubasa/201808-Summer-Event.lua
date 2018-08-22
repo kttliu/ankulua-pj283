@@ -21,6 +21,7 @@ regionRightHalf=Region(screenSizeWidth/2, 0, screenSizeWidth/2,screenSizeHeight)
 regionInGameAttackModeButtons = Region(0,screenSizeHeight*7/8,screenSizeWidth/2,screenSizeHeight/8)
 regionGuildGameShowArea = Region(207,76,1035,552)
 regionCenter = Region(208,24,862,693)
+regionErrorDialog = Region(266,133,742,444)
 
 scriptTime = Timer()
 noOfGamesFinished = 0
@@ -106,14 +107,21 @@ function handleError()
     usePreviousSnap(false)
     snapshot()
     --log("Handle error")
+    if regionErrorDialog:exists(Pattern("dismissed-text.png"):similar(0.90),0) then
+        -- handle dismiss
+        log ("Ooh, dismissed")
+        regionCenter:existsClick(Pattern("ok-button.png"):similar(0.90), 30)
+        usePreviousSnap(false)
+        regionLowerHalf:existsClick(Pattern("confirm-join.png"):similar(0.90), 30)
+        return true;
     -- ToDo: handle comm error, dismiss
-    if regionCenter:existsClick(Pattern("reconnect.png"):similar(0.90),0) then
+    elseif regionErrorDialog:existsClick(Pattern("reconnect.png"):similar(0.90),0) then
         usePreviousSnap(false)
         -- handle disconnected, retry it
         log ("Ooh, no connection")
         -- retry 3 times
-        existsClick(Pattern("reconnect.png"):similar(0.90), 10)
-        existsClick(Pattern("reconnect.png"):similar(0.90), 10)
+        regionErrorDialogexistsClick(Pattern("reconnect.png"):similar(0.90), 10)
+        regionErrorDialogexistsClick(Pattern("reconnect.png"):similar(0.90), 10)
 
         -- start from home
         if gameMode==21 then
@@ -121,13 +129,6 @@ function handleError()
         elseif gameMode==31 then
             joinFromHome()
         end
-        return true;
-    elseif regionCenter:exists(Pattern("dismissed-text.png"):similar(0.90),0) then
-        -- handle dismiss
-        log ("Ooh, dismissed")
-        existsClick(Pattern("ok-button.png"):similar(0.90), 30)
-        usePreviousSnap(false)
-        existsClick(Pattern("confirm-join.png"):similar(0.90), 30)
         return true;
 --[[
      elseif  regionCenter:exists(Pattern("too-many-joiner.png"):similar(0.90), 0) then
@@ -139,7 +140,7 @@ function handleError()
         existsClick(Pattern("ok-button.png"):similar(0.90), 20)
         return true;
 --]]
-    elseif  regionCenter:existsClick(Pattern("ok-button.png"):similar(0.90), 0) then
+    elseif  regionErrorDialog:existsClick(Pattern("ok-button.png"):similar(0.90), 0) then
         return true;
     end
     --public game comm error
@@ -178,7 +179,7 @@ end
 
 function joinFromHome_JoinGuild()
     log("Select Normal Game")
-    existsClick(Pattern("normal-game.png"):similar(0.90), 50)
+    regionRightHalf:existsClick(Pattern("normal-game.png"):similar(0.90), 50)
 end
 
 -- Set to attack mode
@@ -328,19 +329,18 @@ function recurringJoinGuild()
                     -- Disable capture cache
                     write("In Game - before chcck complete match: ".. t:check());
                     usePreviousSnap(false)
-                    if (counterInGame%3==0   and regionCenter:exists(Pattern("complete-match-text.png"):similar(0.90),0)) then
+                    if (counterInGame%4==0   and regionCenter:exists(Pattern("complete-match-text.png"):similar(0.90),0)) then
                         noOfGamesFinished = noOfGamesFinished + 1
                         log("Click through all screens")
 
                         while(true) do
                             click( Location(300, 300))
-                            if(existsClick(Pattern("finish-match.png"):similar(0.95), 3)) then
+                            if(regionLowerHalf:existsClick(Pattern("finish-match.png"):similar(0.95), 2)) then
                                 break;
                             end
                         end
                         -- wait long enough for the game menu
-                        log("Completing game and wait for stage menu")
-                        wait(2)
+                        log("Completing game")
                         break;
                     else
                         write("In Game - Other Start: ".. t:check());
@@ -390,7 +390,6 @@ end
 createlogfile()
 if gameMode==21 then
     joinFromHome_JoinGuild()
-    wait(5)
     recurringJoinGuild()
 elseif gameMode==31 then
     joinFromHome()
