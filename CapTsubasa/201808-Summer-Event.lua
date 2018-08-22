@@ -33,40 +33,59 @@ gameMode = 21
 selected_guild_event = ""
 debugMode=false
 
-dialogInit()
--- Dialog for select Stage
-addRadioGroup("stage", 230)
-addRadioButton("Stage 2 - 30 stma", 230)
-addRadioButton("Stage 2 - 45 stma", 245)
-addRadioButton("Stage 1 - 60 stma", 160)
-newRow()
+--- Display menu
+function mainMenu()
+    dialogInit()
+    -- Dialog for select Game Mode
+    addRadioGroup("gameMode", 21)
+    addRadioButton("Join Guild", 21)
+    --addRadioButton("Create Myself", 10)
+    --addRadioButton("Create Guild", 20)
+    --addRadioButton("Create Public", 30)
+    addRadioButton("Join Public", 31)
+    addSeparator()
 
--- Dialog for select Game Mode
-addSeparator()
-addRadioGroup("gameMode", 21)
-addRadioButton("Join Guild", 21)
---addRadioButton("Create Myself", 10)
---addRadioButton("Create Guild", 20)
---addRadioButton("Create Public", 30)
-addRadioButton("Join Public", 31)
-newRow()
+    addCheckBox("debugMode", "Enable Log", false)
+    addCheckBox("attackModeBoolean", "Attack!", false)
 
--- Guild Game - Event to join
-spinnerItems = {"0000 - Any", "0001 - 2018 Summer Event"}
-addTextView("Guild Event To Join:  ")
-addSpinner("selected_guild_event", spinnerItems, "0000 - Any")
-newRow()
+    dialogShow("Menu")
+end
 
--- Set Attack Mode or Not
-addSeparator()
-addRadioGroup("attackMode", 0)
-addRadioButton("No Change", 0)
-addRadioButton("Attack", 1)
+function menu_join_public_game()
+    if gameMode==31 then
+        dialogInit()
+        -- Dialog for select Stage
+        addRadioGroup("stage", 230)
+        addRadioButton("Stage 2 - 30 stma", 230)
+        addRadioButton("Stage 2 - 45 stma", 245)
+        addRadioButton("Stage 1 - 60 stma", 160)
 
-addSeparator()
-addCheckBox("debugMode", "Debug Model", false)
+        dialogShow("Menu")
+    end
+end
 
-dialogShow("Menu")
+function menu_join_guild_game()
+    if gameMode==21 then
+        dialogInit()
+        -- Guild Game - Event to join
+        spinnerItems = {"0000 - Any", "0001 - 2018 Summer Event"}
+        addTextView("Guild Event To Join:  ")
+        addSpinner("selected_guild_event", spinnerItems, "0000 - Any")
+
+        dialogShow("Menu")
+    end
+end
+
+mainMenu()
+menu_join_public_game()
+menu_join_guild_game()
+
+if attackModeBoolean then
+    attackMode = 1
+else
+    attackMode = 0
+end
+
 
 -- Set Stage picture
 stage_pic = "event-row2-text.png"
@@ -188,9 +207,9 @@ end
 function setAttackMode(isAttacking)
     if(attackMode==1 and isAttacking==false) then
         if regionInGameAttackModeButtons:existsClick(Pattern("attack-mode-button.png"):similar(0.95),0) then
-            log("Change to Attack Mode")
             return false
         end
+        log("Changed to Attack Mode")
         return true
     end
 end
