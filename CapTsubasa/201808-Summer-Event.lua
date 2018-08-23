@@ -100,7 +100,7 @@ else
     attackMode = 0
 end
 
-logger.set(string.sub(selected_guild_event,1,2) + 0)
+logger.set(string.sub(selected_verbose,1,2) + 0)
 
 ----- End Menu Processing
 
