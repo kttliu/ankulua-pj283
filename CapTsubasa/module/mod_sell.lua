@@ -3,11 +3,12 @@
 -- User: timothy
 -- Date: 24/8/2018
 -- Time: 21:36
--- To change this template use File | Settings | File Templates.
+-- Auto Sell function
 --
 
 local mod_sell =  {}
 
+-- The following based on 1280 x720 resolution
 local region_item_full_dialog_buttons = Region(365,372,548,180)
 local region_sell_screen_buttons = Region(0,588,1265,132)
 local region_center = Region(379,319,504,269)
