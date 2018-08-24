@@ -9,6 +9,7 @@
 
 -- Load logger module
 logger =  require(scriptPath().."module/mod_logger")
+modsell=  require(scriptPath().."module/mod_sell")
 
 -- Global Paramaeters
 setImmersiveMode(true)
@@ -159,6 +160,10 @@ function handleError()
     elseif  regionErrorDialog:existsClick(Pattern("ok-button.png"):similar(0.90), 0) then
         return true;
     end
+
+    -- handle item full
+    modsell.check()
+
     --public game comm error
 
    -- Enable screen cap
@@ -320,7 +325,9 @@ function recurringJoinGuild()
        local counter = 1
         while(true) do
             t = Timer();
-            logger.info("# of games finished:" .. noOfGamesFinished)
+            if (counter%10==0) then
+                logger.info("# of games finished:" .. noOfGamesFinished)
+            end
 
             -- Go to the Waiting Room if exists
             -- Use last capture image for checking
@@ -352,11 +359,13 @@ function recurringJoinGuild()
 
                         while(true) do
                             click( Location(300, 300))
-                            if(regionLowerHalf:existsClick(Pattern("finish-match.png"):similar(0.95), 2)) then
+                            if(regionLowerHalf:existsClick(Pattern("finish-match.png"):similar(0.98), 2)) then
+                                wait(1)
+                                click( Location(300, 300))
                                 break;
                             end
                         end
-                        -- wait long enough for the game menu
+
                         logger.info("Completing game")
                         break;
                     else
