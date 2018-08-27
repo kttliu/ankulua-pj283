@@ -80,7 +80,7 @@ end
 -- bulk_sell
 function bulk_sell()
     toast("bulk_sell")
-    if existsClick(Pattern("bulk-sell-button.png"):similar(0.90), 15) then
+    if existsClick(Pattern("button-bulk-sell.png"):similar(0.90), 15) then
         --click(getLastMatch())
         if existsClick(Pattern("sell-confirm-button.png"):similar(0.90), 10) then
             click(getLastMatch())
@@ -88,7 +88,7 @@ function bulk_sell()
                 --click(getLastMatch())
                 if existsClick(Pattern("ok-button.png"):similar(0.90), 15) then
                     --click(getLastMatch())
-                    if existsClick(Pattern("back-button.png"):similar(0.90), 15) then
+                    if existsClick(Pattern("button-back.png"):similar(0.90), 15) then
                         --click(getLastMatch())
                     end
                 end

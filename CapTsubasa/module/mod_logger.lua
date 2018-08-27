@@ -30,6 +30,7 @@ end
 function mod_logger.info(msg)
     if logger_mode >= 1 then
         toast(msg)
+        write(msg)
     end
 end
 
@@ -42,6 +43,7 @@ end
 function mod_logger.trace(msg)
     if logger_mode >= 3 then
         write(msg)
+        file:flush()
     end
 end
 

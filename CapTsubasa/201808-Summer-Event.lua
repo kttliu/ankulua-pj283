@@ -6,6 +6,7 @@
 -- Time: 22:27
 -- To change this template use File | Settings | File Templates.
 --
+BUILD_NUMBER="V20180827-1"
 
 -- Load logger module
 logger =  require(scriptPath().."module/mod_logger")
@@ -26,9 +27,9 @@ regionLowerHalf=Region(0, screenSizeHeight/2, screenSizeWidth,screenSizeHeight/2
 regionLeftHalf=Region(0, 0, screenSizeWidth/2,screenSizeHeight)
 regionRightHalf=Region(screenSizeWidth/2, 0, screenSizeWidth/2,screenSizeHeight)
 regionInGameAttackModeButtons = Region(0,screenSizeHeight*7/8,screenSizeWidth/2,screenSizeHeight/8)
-regionGuildGameShowArea = Region(207,76,1035,552)
+regionGuildGameShowArea = Region(212,76,874,552)
 regionCenter = Region(208,24,862,693)
-regionErrorDialog = Region(266,133,742,444)
+regionErrorDialog = Region(371,111,509,507)
 
 scriptTime = Timer()
 noOfGamesFinished = 0
@@ -40,11 +41,13 @@ attackMode = 0
 gameMode = 21
 selected_guild_event = ""
 joinFromHomeSwitch=true
-debugMode=false
+
 
 --- Display menu
 function mainMenu()
     dialogInit()
+    addTextView(BUILD_NUMBER);
+    addSeparator()
     -- Dialog for select Game Mode
     addRadioGroup("gameMode", 21)
     addRadioButton("Join Guild", 21)
@@ -54,7 +57,6 @@ function mainMenu()
     addRadioButton("Join Public", 31)
     addSeparator()
 
-    addCheckBox("debugMode", "Enable Log", false)
     addCheckBox("attackModeBoolean", "Attack!", false)
     addCheckBox("joinFromHomeSwitch","Join From Home", true)
 
@@ -118,46 +120,43 @@ end
 
 --handle error
 function handleError()
+    local errorTime = Timer()
+    logger.trace("Handle error - BEGIN: "..errorTime:check())
     -- Prevent cap screen again for error checking
-    --exists(Pattern("dummy.png"):similar(0.90),0)
     usePreviousSnap(false)
     snapshot()
-    logger.debug("Handle error")
-    if regionErrorDialog:exists(Pattern("dismissed-text.png"):similar(0.90),0) then
-        -- handle dismiss
-        logger.info ("Ooh, dismissed")
+    logger.trace("Handle error - Snapshot: "..errorTime:check())
+    if  regionErrorDialog:existsClick(Pattern("ok-button.png"):similar(0.90), 0) then
+        logger.trace("Handle error - OK: "..errorTime:check())
 
-        regionCenter:existsClick(Pattern("ok-button.png"):similar(0.90), 30)
+        if regionErrorDialog:exists(Pattern("dismissed-text.png"):similar(0.90),0) then
+            logger.trace("Handle error - Dismissed: "..errorTime:check())
+            -- handle dismiss
+            logger.info ("Ooh, dismissed")
+            --usePreviousSnap(false)
+            --regionLowerHalf:existsClick(Pattern("confirm-join.png"):similar(0.90), 0)
+
+            logger.trace("Handle error - Dismissed END: "..errorTime:check())
+            return true;
+        end
+
+        logger.trace("Handle error - OK END: "..errorTime:check())
         usePreviousSnap(false)
-        regionLowerHalf:existsClick(Pattern("confirm-join.png"):similar(0.90), 30)
         return true;
     -- ToDo: handle comm error, dismiss
     elseif regionErrorDialog:existsClick(Pattern("reconnect.png"):similar(0.90),0) then
+        logger.trace("Handle error - RECONNECT: "..errorTime:check())
         usePreviousSnap(false)
-        -- handle disconnected, retry it
-        logger.info ("Ooh, no connection")
-        -- retry 3 times
-        regionErrorDialogexistsClick(Pattern("reconnect.png"):similar(0.90), 10)
-        regionErrorDialogexistsClick(Pattern("reconnect.png"):similar(0.90), 10)
 
+        logger.info ("Ooh, no connection")
         -- start from home
         if gameMode==21 then
             joinFromHome_JoinGuild()
         elseif gameMode==31 then
             joinFromHome()
         end
-        return true;
---[[
-     elseif  regionCenter:exists(Pattern("too-many-joiner.png"):similar(0.90), 0) then
-        log ("Ooh, too many joiners")
-        existsClick(Pattern("ok-button.png"):similar(0.90), 30)
-        return true;
-    elseif  regionCenter:exists(Pattern("room-disappear-text.png"):similar(0.90), 0) then
-        log ("Ooh, room disappeared")
-        existsClick(Pattern("ok-button.png"):similar(0.90), 20)
-        return true;
---]]
-    elseif  regionErrorDialog:existsClick(Pattern("ok-button.png"):similar(0.90), 0) then
+
+        logger.trace("Handle error - RECONNECT - RESUME: "..errorTime:check())
         return true;
     end
 
@@ -168,6 +167,7 @@ function handleError()
 
    -- Enable screen cap
     usePreviousSnap(false)
+    logger.trace("Handle error - END: "..errorTime:check())
     return false;
 end
 
@@ -267,43 +267,7 @@ function recurringJoin()
                     if existsClick(Pattern("confirm-join.png"):similar(0.90), 30) then
                         t = Timer()
                         --wait for game end
-                        local isAttacking=false
-                        while(true) do
-                            -- To-Do: Long waiting time to restart the game
-
-                            logger.info("# of games finished:" .. noOfGamesFinished .. " wait time: " .. t:check())
-                            -- Check game started
-
-                           -- Shoot in the front
-                           -- shootIfGetBallInFrontArea()
-
-                           -- Set Attack Mode
-                            isAttacking = setAttackMode(isAttacking)
-
-                            -- Check for the complete match screen
-                            if exists(Pattern("complete-match-text.png"):similar(0.90), 1) then
-                                logger.info ("Click through all screens")
-                                while(true) do
-                                    if(existsClick(Pattern("finish-match.png"):similar(0.90), 1)) then
-                                        noOfGamesFinished = noOfGamesFinished + 1
-                                        break;
-                                    else
-                                        logger.info ("Click ...")
-                                        click(getLastMatch())
-                                    end
-                                end
-
-                                noOfGamesFinished = noOfGamesFinished + 1
-
-                               -- wait long enough for the game menu
-                                logger.info("Completing game and wait for stage menu")
-                                wait(20)
-                                break;
-                            end
-
-                            -- check error, handle for next game, if any
-                            handleError()
-                        end
+                        handle_ingame_events()
                 end
             end
         end
@@ -321,96 +285,157 @@ function guild_event_to_join()
     end
 end
 
+function handle_ingame_events()
+   local in_game_pre_screen_2_clicked = false
+
+    -- Joined a game, do in game handling
+    logger.trace("GAME STARTED: ".. t:check());
+    local counterInGame = 1
+    while(true) do
+        local isAttacking=false
+        -- To-Do:  Long waiting time to restart the game
+
+        -- Check for the complete match screen
+        -- Disable capture cache
+        logger.trace("In Game - before chcck complete match: ".. t:check());
+        usePreviousSnap(false)
+--[[
+        if not in_game_pre_screen_1_clicked and regionLowerHalf:existsClick(Pattern("img_start_game_screen_1.png"):similar(0.90), 0) then
+            in_game_pre_screen_1_clicked = true;
+            logger.debug("START GAME PRE SCREEN 1 clicked")
+        else
+--]]
+         if not in_game_pre_screen_2_clicked and Region(48,158,666,831):existsClick(Pattern("img_start_game_screen_2.png"):similar(0.90), 0) then
+            in_game_pre_screen_2_clicked = true;
+            logger.debug("In Game - START GAME PRE SCREEN 2 clicked")
+        elseif (counterInGame%4==0   and regionCenter:exists(Pattern("complete-match-text.png"):similar(0.90),0)) then
+            noOfGamesFinished = noOfGamesFinished + 1
+            logger.info("In Game - Click through all screens")
+
+            while(true) do
+                click( Location(300, 300))
+                if(regionLowerHalf:existsClick("finish-match.png", 2)) then
+                    wait(0.5)
+                    click( Location(640, 675))
+                    break;
+                end
+            end
+
+            logger.info("In Game - Completing game")
+            break;
+        else
+            logger.trace("In Game - Other Start: ".. t:check());
+            usePreviousSnap(true)
+
+            -- Set Attack Mode
+            isAttacking = setAttackMode(isAttacking)
+
+            -- Shoot in the front field
+            -- shootIfGetBallInFrontArea()
+
+            -- check error, handle for next game, if any
+            logger.trace("In Game - before handle error: ".. t:check());
+            if counterInGame %5 == 0 then
+                if handleError() then
+                    -- Disable capture cache
+                    usePreviousSnap(false)
+                    break;
+                end
+            end
+            logger.trace("In Game - after handle error: ".. t:check());
+
+            -- Disable capture cache
+            usePreviousSnap(false)
+            logger.trace("In Game - Other End: ".. t:check());
+        end
+        counterInGame = counterInGame + 1
+    end
+    logger.trace("In Game - end: ".. t:check());
+
+    -- Disable capture cache
+    usePreviousSnap(false)
+end
+
 function recurringJoinGuild()
+       local iterations_to_show_text_and_check_error = 5
+       t = Timer();
        local counter = 1
         while(true) do
-            t = Timer();
-            if (counter%10==0) then
+            local sucessfulTriggerScreen = false
+
+            if (counter%iterations_to_show_text_and_check_error==0) then
                 logger.info("# of games finished:" .. noOfGamesFinished)
             end
 
             -- Go to the Waiting Room if exists
             -- Use last capture image for checking
             --usePreviousSnap(true)
-            logger.debug("BEGINE Loop");
+            logger.debug("BEGIN Loop");
             snapshot()
             logger.trace("Snapshot: ".. t:check());
 
-            if regionGuildGameShowArea:existsClick(Pattern(guild_event_to_join()):similar(0.90), 0) then -- Join selected event(s)
-            elseif regionLowerHalf:existsClick(Pattern("confirm-join.png"):similar(0.90),0) then
-                -- Disable capture cache
-                -- usePreviousSnap(false)
-
-               -- Joined a game, do in game handling
-                logger.trace("confirm-join 1: ".. t:check());
-                local counterInGame = 1
-                while(true) do
-
-                    local isAttacking=false
-                    -- To-Do:  Long waiting time to restart the game
-
-                    -- Check for the complete match screen
-                    -- Disable capture cache
-                    logger.trace("In Game - before chcck complete match: ".. t:check());
-                    usePreviousSnap(false)
-                    if (counterInGame%4==0   and regionCenter:exists(Pattern("complete-match-text.png"):similar(0.90),0)) then
-                        noOfGamesFinished = noOfGamesFinished + 1
-                        logger.info("Click through all screens")
-
-                        while(true) do
-                            click( Location(300, 300))
-                            if(regionLowerHalf:existsClick(Pattern("finish-match.png"):similar(0.98), 2)) then
-                                wait(1)
-                                click( Location(300, 300))
-                                break;
-                            end
-                        end
-
-                        logger.info("Completing game")
-                        break;
-                    else
-                        logger.trace("In Game - Other Start: ".. t:check());
-                        usePreviousSnap(true)
-
-                        -- Set Attack Mode
-                        isAttacking = setAttackMode(isAttacking)
-
-                        -- Shoot in the front field
-                        -- shootIfGetBallInFrontArea()
-
-                        -- check error, handle for next game, if any
-                        logger.trace("In Game - before handle error: ".. t:check());
-                        if counterInGame %10 == 0 then
-                            if handleError() then
-                                -- Disable capture cache
-                                usePreviousSnap(false)
-                                break;
-                            end
-                        end
-                        logger.trace("In Game - after handle error: ".. t:check());
-
-                        -- Disable capture cache
-                        usePreviousSnap(false)
-                        logger.trace("In Game - Other End: ".. t:check());
-                    end
-                    counterInGame = counterInGame + 1
-                end
-                logger.trace("confirm-join 2: ".. t:check());
-
-                -- Disable capture cache
+            if Region(1080,634,172,86):exists(Pattern("img_guild_game_join_screen.png"):similar(0.90), 0) then
+                -- Join selected event(s)
                 usePreviousSnap(false)
-            elseif regionRightHalf:existsClick(Pattern("join-guild-game.png"):similar(0.90),0) then
+                logger.info("BEGIN WAIT JOIN GAME: " .. noOfGamesFinished)
+                if regionGuildGameShowArea:existsClick(Pattern(guild_event_to_join()):similar(0.90), 10) then
+                    logger.trace("JOINED GAME: "..t:check())
+                    wait(0.3)
+                end
+            elseif Region(903,443,365,202):existsClick(Pattern("confirm-join.png"):similar(0.90),0) then
+                logger.trace("CONFIRM JOIN: "..t:check())
+                sucessfulTriggerScreen = true
+            elseif Region(683,109,556,428):existsClick(Pattern("join-guild-game.png"):similar(0.90),0) then
+                logger.trace("JOIN GUILD GAME: "..t:check())
+                sucessfulTriggerScreen = true
+            elseif Region(421,511,519,209):existsClick(Pattern("img_start_game_screen_1.png"):similar(0.90), 0) then
+                logger.trace("GAME STARTED: "..t:check())
+                sucessfulTriggerScreen = true
+                handle_ingame_events()
             end
 
-            logger.trace("Before handle Error: ".. t:check());
-            if counter%10 == 0 then
-                regionLowerHalf:existsClick(Pattern("finish-match.png"):similar(0.90), 0)
-                handleError()
+            if not sucessfulTriggerScreen then
+                logger.trace("Before handle Error: ".. t:check());
+                if counter%iterations_to_show_text_and_check_error == 0 then
+                    regionLowerHalf:existsClick(Pattern("finish-match.png"):similar(0.90), 0)
+                    handleError()
+                end
+                logger.trace("After handle Error: ".. t:check());
             end
-            logger.trace("After handle Error: ".. t:check());
             counter = counter + 1
+            usePreviousSnap(false)
         end
 end
+
+--[[
+function create_guild_game()
+    while(true) do
+        if existsClick(Pattern(guild_event_to_join()):similar(0.90), 0) then -- Join selected event(s)
+    end
+
+"normal-game.png"
+"join-event"
+"game-join-event-img-0002.png"
+    "img-stage-extreme.png" /     "img-stage-very-hard.png" /     "img-stage-hard.png"
+"ready-button.png"
+"create-guild-game.png"
+"button-recruit.png"
+
+    local roomWaitTime = Timer()
+    while(true) do
+        wait(1)
+        -- 3
+        -- 2
+        if roomWaitTime:check()>120 then
+                "button-game-start.png"
+        end
+        -- 1
+        if roomWaitTime:check()>150 then
+                "button-game-start.png"
+        end
+    end
+end
+--]]
 
 -- main
 if gameMode==21 then
