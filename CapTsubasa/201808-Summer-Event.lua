@@ -363,24 +363,21 @@ function recurringJoinGuild()
         while(true) do
             local sucessfulTriggerScreen = false
 
-            if (counter%iterations_to_show_text_and_check_error==0) then
-                logger.info("# of games finished:" .. noOfGamesFinished)
-            end
-
             -- Go to the Waiting Room if exists
             -- Use last capture image for checking
             --usePreviousSnap(true)
-            logger.debug("BEGIN Loop");
+            logger.debug("BEGIN Loop")
             snapshot()
-            logger.trace("Snapshot: ".. t:check());
+            logger.trace("Snapshot: ".. t:check())
 
             if Region(1080,634,172,86):exists(Pattern("img_guild_game_join_screen.png"):similar(0.90), 0) then
                 -- Join selected event(s)
                 usePreviousSnap(false)
-                logger.info("BEGIN WAIT JOIN GAME: " .. noOfGamesFinished)
+                logger.trace("BEGIN WAIT JOIN GAME: "..t:check())
+                logger.info("# of games finished:" .. noOfGamesFinished)
                 if regionGuildGameShowArea:existsClick(Pattern(guild_event_to_join()):similar(0.90), 10) then
                     logger.trace("JOINED GAME: "..t:check())
-                    wait(0.3)
+                    sucessfulTriggerScreen = true
                 end
             elseif Region(903,443,365,202):existsClick(Pattern("confirm-join.png"):similar(0.90),0) then
                 logger.trace("CONFIRM JOIN: "..t:check())
@@ -390,17 +387,16 @@ function recurringJoinGuild()
                 sucessfulTriggerScreen = true
             elseif Region(421,511,519,209):existsClick(Pattern("img_start_game_screen_1.png"):similar(0.90), 0) then
                 logger.trace("GAME STARTED: "..t:check())
-                sucessfulTriggerScreen = true
                 handle_ingame_events()
             end
 
             if not sucessfulTriggerScreen then
-                logger.trace("Before handle Error: ".. t:check());
+                --logger.trace("Before handle Error: ".. t:check());
                 if counter%iterations_to_show_text_and_check_error == 0 then
                     regionLowerHalf:existsClick(Pattern("finish-match.png"):similar(0.90), 0)
                     handleError()
                 end
-                logger.trace("After handle Error: ".. t:check());
+                --logger.trace("After handle Error: ".. t:check());
             end
             counter = counter + 1
             usePreviousSnap(false)
